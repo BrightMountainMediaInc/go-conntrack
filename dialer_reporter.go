@@ -5,8 +5,10 @@ package conntrack
 
 import (
 	"context"
+	"log"
 	"net"
 	"os"
+	"reflect"
 	"syscall"
 
 	prom "github.com/prometheus/client_golang/prometheus"
@@ -86,6 +88,7 @@ func reportDialerConnClosed(dialerName string) {
 
 func reportDialerConnFailed(dialerName string, err error) {
 	if netErr, ok := err.(*net.OpError); ok {
+		log.Printf("Dialer connection net error: %v, Dialer error type: %v", netErr.Error(), reflect.TypeOf(netErr.Err))
 		switch nestErr := netErr.Err.(type) {
 		case *net.DNSError:
 			dialerConnFailedTotal.WithLabelValues(dialerName, string(failedResolution)).Inc()
@@ -104,5 +107,6 @@ func reportDialerConnFailed(dialerName string, err error) {
 		dialerConnFailedTotal.WithLabelValues(dialerName, string(failedTimeout)).Inc()
 		return
 	}
+	log.Printf("Dialer connection error: %v, Dialer error type: %v", err.Error(), reflect.TypeOf(err))
 	dialerConnFailedTotal.WithLabelValues(dialerName, string(failedUnknown)).Inc()
 }
